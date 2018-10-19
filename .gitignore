@@ -1,0 +1,7 @@
+*.obj
+*.dll
+*.bmp
+AGP Class Test/Debug/*
+AGP Class Test/.vs/*
+AGP Class Test/AGP Class Test/Debug/*
+AGP Class Test/AGP Class Test/town-skybox/*
