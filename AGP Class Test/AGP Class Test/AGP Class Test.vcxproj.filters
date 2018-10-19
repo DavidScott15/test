@@ -70,5 +70,11 @@
     <None Include="phongReflectMap.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="phongRefractMap.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="phongRefractMap.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

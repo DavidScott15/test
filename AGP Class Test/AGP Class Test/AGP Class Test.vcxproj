@@ -158,6 +158,8 @@
     <None Include="phong-tex.vert" />
     <None Include="phongReflectMap.frag" />
     <None Include="phongReflectMap.vert" />
+    <None Include="phongRefractMap.frag" />
+    <None Include="phongRefractMap.vert" />
     <None Include="simple.frag" />
     <None Include="textured.frag" />
     <None Include="textured.vert" />

@@ -242,6 +242,18 @@ void init(void) {
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attQuadratic");
 	glUniform1f(uniformIndex, attQuadratic);
 
+	//refract
+	refractShaderProgram = rt3d::initShaders("phongRefractMap.vert", "phongRefractMap.frag");
+	rt3d::setLight(refractShaderProgram, light0);
+	rt3d::setMaterial(refractShaderProgram, material0);
+	// set light attenuation shader uniforms
+	uniformIndex = glGetUniformLocation(refractShaderProgram, "attConst");
+	glUniform1f(uniformIndex, attConstant);
+	uniformIndex = glGetUniformLocation(refractShaderProgram, "attLinear");
+	glUniform1f(uniformIndex, attLinear);
+	uniformIndex = glGetUniformLocation(refractShaderProgram, "attQuadratic");
+	glUniform1f(uniformIndex, attQuadratic);
+
 
 	textureProgram = rt3d::initShaders("textured.vert", "textured.frag");
 	skyboxProgram = rt3d::initShaders("cubeMap.vert", "cubeMap.frag");
@@ -276,11 +288,8 @@ void init(void) {
 	// set tex sampler to texture unit 0, arbitrarily
 	uniformIndex = glGetUniformLocation(textureProgram, "texMap");
 	glUniform1i(uniformIndex, 0);
-	// Now bind textures to texture units
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	
+	
 }
 
 glm::vec3 moveForward(glm::vec3 pos, GLfloat angle, GLfloat d) {
@@ -319,8 +328,10 @@ void update(void) {
 	if (keys[SDL_SCANCODE_2]) shaderControl = 2; //Gouraud
 	if (keys[SDL_SCANCODE_3]) shaderControl = 3; //Toon
 	if (keys[SDL_SCANCODE_4]) shaderControl = 4; //Reflect
+	if (keys[SDL_SCANCODE_5]) shaderControl = 5; //Refract
 }
 
+//draw bunny using toon shader
 void drawToon(glm::vec4 tmp, glm::mat4 projection) {
 	glUseProgram(toonShaderProgram);
 	rt3d::setLightPos(toonShaderProgram, glm::value_ptr(tmp));
@@ -334,6 +345,7 @@ void drawToon(glm::vec4 tmp, glm::mat4 projection) {
 	mvStack.pop();
 }
 
+//draw bunny using phong shader
 void drawPhong(glm::vec4 tmp, glm::mat4 projection) {
 	glUseProgram(phongShaderProgram);
 	rt3d::setLightPos(phongShaderProgram, glm::value_ptr(tmp));
@@ -347,6 +359,7 @@ void drawPhong(glm::vec4 tmp, glm::mat4 projection) {
 	mvStack.pop();
 }
 
+//draw bunny using gouraud shader
 void drawGouraud(glm::vec4 tmp, glm::mat4 projection) {
 	glUseProgram(gouraudShaderProgram);
 	rt3d::setLightPos(gouraudShaderProgram, glm::value_ptr(tmp));
@@ -360,8 +373,15 @@ void drawGouraud(glm::vec4 tmp, glm::mat4 projection) {
 	mvStack.pop();
 }
 
+//draw bunny using reflect shader
 void drawReflect(glm::vec4 tmp, glm::mat4 projection)
 {
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	
 	glUseProgram(reflectShaderProgram);
 	rt3d::setUniformMatrix4fv(reflectShaderProgram, "projection", glm::value_ptr(projection));
 	rt3d::setLightPos(reflectShaderProgram, glm::value_ptr(tmp));
@@ -387,6 +407,44 @@ void drawReflect(glm::vec4 tmp, glm::mat4 projection)
 	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
 
 	
+	mvStack.pop();
+	mvStack.pop();
+}
+
+//draw bunny using refract shader
+void drawRefract(glm::vec4 tmp, glm::mat4 projection)
+{
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+
+	glUseProgram(refractShaderProgram);
+	rt3d::setUniformMatrix4fv(refractShaderProgram, "projection", glm::value_ptr(projection));
+	rt3d::setLightPos(refractShaderProgram, glm::value_ptr(tmp));
+
+	mvStack.push(mvStack.top());
+	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
+	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 20.0f, 20.0f));
+	rt3d::setUniformMatrix4fv(refractShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+	rt3d::setMaterial(refractShaderProgram, material1);
+
+
+	glm::mat4 modelMatrix(1.0);
+	mvStack.push(mvStack.top());
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(-4.0f, 0.1f, -2.0f));
+	modelMatrix = glm::rotate(modelMatrix, float(theta), glm::vec3(1.0f, 1.0f, 1.0f));
+	mvStack.top() = mvStack.top() * modelMatrix;
+	rt3d::setUniformMatrix4fv(refractShaderProgram, "modelMatrix", glm::value_ptr(modelMatrix));
+
+
+	rt3d::drawIndexedMesh(meshObjects[2], meshIndexCount, GL_TRIANGLES);
+
+	GLuint uniformIndex = glGetUniformLocation(refractShaderProgram, "cameraPos");
+	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
+
+
 	mvStack.pop();
 	mvStack.pop();
 }
@@ -464,6 +522,7 @@ void draw(SDL_Window * window) {
 	if (shaderControl == 2) drawGouraud(tmp, projection);
 	if (shaderControl == 3) drawToon(tmp, projection);
 	if (shaderControl == 4) drawReflect(tmp, projection);
+	if (shaderControl == 5) drawRefract(tmp, projection);
 
 	// remember to use at least one pop operation per push...
 	mvStack.pop(); // initial matrix
